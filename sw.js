@@ -1,10 +1,10 @@
-const CACHE_NAME = 'polleria-rey-v1';
+const CACHE_NAME = 'prestamos';
 const ASSETS = [
-  '/polleriaREY/',
-  '/polleriaREY/index.html',
-  '/polleriaREY/manifest.json',
-  '/polleriaREY/icono-192.png',
-  '/polleriaREY/icono-512.png'
+  '/willy/',
+  '/willy/index.html',
+  '/willy/manifest.json',
+  '/willy/icono-192.png',
+  '/willy/icono-512.png'
 ];
 
 // Instalar el Service Worker y almacenar en caché los archivos básicos
