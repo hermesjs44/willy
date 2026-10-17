@@ -1,7 +1,7 @@
 {
-  "name": "Pollería REY",
-  "short_name": "Pollería REY",
-  "start_url": "/polleriaREY/index.html",
+  "name": "Prestamos",
+  "short_name": "Prestamos",
+  "start_url": "/willy/index.html",
   "display": "standalone",
   "background_color": "#ff0000",
   "theme_color": "#ff0000",
