@@ -1,6 +1,6 @@
 {
   "name": "Prestamos",
-  "short_name": "Prestamos",
+  "short_name": "Prestamo",
   "start_url": "/willy/index.html",
   "display": "standalone",
   "background_color": "#ff0000",
