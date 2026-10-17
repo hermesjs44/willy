@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Integrado de Control de Préstamos y Pagos</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning: #d97706;
+            --bg: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --sidebar-text: #94a3b8;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: white;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 10px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            padding: 12px 15px;
+            border: none;
+            background: transparent;
+            color: var(--sidebar-text);
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-width: 1400px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .sidebar { width: 100%; min-height: auto; padding: 15px; }
+            .sidebar-menu { flex-direction: row; justify-content: space-between; overflow-x: auto; }
+            .tab-btn { padding: 8px 10px; font-size: 12px; justify-content: center; white-space: nowrap; }
+            .main-content { padding: 15px; }
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .prestamo-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .prestamo-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric-card {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .simulador-box {
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .simulador-box p {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .form-group { margin-bottom: 12px; }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        input, select, button, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-success { background-color: var(--success); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-info { background-color: #0284c7; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 12px; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .modal-large {
+            max-width: 950px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        th { background-color: #f8fafc; }
+
+        /* Estilo Tabular Excel */
+        .excel-table {
+            border: 1px solid #107c41;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+        }
+
+        .excel-table th {
+            background-color: #107c41;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid #0e6b37;
+            padding: 6px 8px;
+        }
+
+        .excel-table td {
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+        }
+
+        .excel-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        .excel-table tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-excelente { background: #dcfce7; color: #15803d; }
+        .badge-regular { background: #fef3c7; color: #b45309; }
+        .badge-moroso { background: #fee2e2; color: #b91c1c; }
+
+        .badge-pendiente { background: #fef3c7; color: #92400e; }
+        .badge-pagado { background: #dcfce7; color: #166534; }
+        .badge-parcial { background: #e0f2fe; color: #0369a1; }
+        .badge-atrasado { background: #fee2e2; color: #991b1b; }
+        .badge-sinprestamo { background: #f1f5f9; color: #64748b; }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span>💳</span> Control Préstamos
+        </div>
+        
+        <div id="conexionStatus" style="padding: 6px 12px; margin-bottom: 20px; font-size: 11px; border-radius: 20px; font-weight: bold; text-align: center; background: #334155; color: #94a3b8;">
+            🔄 Conectando...
+        </div>
+
+        <nav class="sidebar-menu">
+            <button class="tab-btn active" onclick="switchTab('clientes', this)">
+                <span>👨‍💼</span> Clientes
+            </button>
+            <button class="tab-btn" onclick="switchTab('prestamos', this)">
+                <span>💰</span> Préstamos
+            </button>
+            <button class="tab-btn" onclick="switchTab('pagos', this)">
+                <span>💵</span> Pagos
+            </button>
+            <button class="tab-btn" onclick="switchTab('mideuda', this)">
+                <span>👤</span> Mi Deuda
+            </button>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+
+        <!-- TAB: CLIENTES -->
+        <div id="tab-clientes" class="tab-content active">
+            <h1 style="margin-bottom: 20px;">Gestión de Clientes</h1>
+            <div class="grid">
+                <div class="card">
+                    <h2 id="tituloFormCliente" style="font-size: 18px; margin-bottom: 15px;">Registrar / Editar Cliente</h2>
+                    <form id="formCliente">
+                        <input type="hidden" id="cliId">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="cliNombre" required placeholder="Ej. Juan Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" id="cliTelefono" required placeholder="Ej. +549356400000">
+                        </div>
+                        <div class="form-group">
+                            <label>Domicilio</label>
+                            <input type="text" id="cliDomicilio" placeholder="Ej. Av. España 1234, Barrio Centro">
+                        </div>
+                        <div class="form-group">
+                            <label>Email / Documento</label>
+                            <input type="text" id="cliInfo" placeholder="DNI o Email">
+                        </div>
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <textarea id="cliObservaciones" placeholder="Ej. Cliente preferencial, llamar por las tardes..."></textarea>
+                        </div>
+                        <button type="submit" id="btnGuardarCliente">Guardar Cliente</button>
+                        <button type="button" id="btnCancelarEdicion" class="btn-warning" style="display:none; margin-top:5px;" onclick="cancelarEdicion()">Cancelar Edición</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Listado y Estado General de Clientes</h2>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto del Préstamo</th>
+                                    <th>Estado del Préstamo</th>
+                                    <th>Monto Cuota</th>
+                                    <th>Cuotas Atrasadas</th>
+                                    <th>Fecha de Próxima Cuota</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaClientes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PRÉSTAMOS -->
+        <div id="tab-prestamos" class="tab-content">
+            <h1 style="margin-bottom: 20px;">Control de Préstamos</h1>
+            
+            <div class="metric-card">
+                <div>Monto $ Total Prestado (Capital Activo):</div>
+                <div class="metric-value" id="metricTotalPrestado">$0.00</div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Carga y Cálculo de Préstamo</h2>
+                    <form id="formPrestamo">
+                        <div class="form-group">
+                            <label>Seleccionar Cliente</label>
+                            <select id="presCliente" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha del Préstamo</label>
+                            <input type="date" id="presFechaPrestamo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Modalidad de Pago</label>
+                            <select id="presModalidad" onchange="calcularCuotaSimulada()" required>
+                                <option value="semanal" selected>Semanal (Cada 7 días)</option>
+                                <option value="quincenal">Quincenal (Cada 15 días)</option>
+                                <option value="mensual">Mensual (Cada 30 días)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto a Prestar ($)</label>
+                            <input type="number" id="presMonto" step="0.01" value="10000" oninput="calcularCuotaSimulada()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tasa por Período (%)</label>
+                            <input type="number" id="presTasa" step="0.1" value="2.5" oninput="calcularCuotaSimulada()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad de Cuotas</label>
+                            <input type="number" id="presSemanas" value="4" oninput="calcularCuotaSimulada()" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha del Primer Pago</label>
+                            <input type="date" id="presFecha" required>
+                        </div>
+
+                        <div class="simulador-box">
+                            <p><span>Valor por Cuota:</span> <strong id="simCuota" style="color:var(--primary); font-size:16px;">$0.00</strong></p>
+                            <p><span>Interés Total:</span> <strong id="simInteres">$0.00</strong></p>
+                            <p><span>Total a Devolver:</span> <strong id="simTotal">$0.00</strong></p>
+                        </div>
+
+                        <button type="submit" class="btn-success" style="margin-top: 15px;">Crear Préstamo</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Búsqueda y Cuotas en Atraso</h2>
+                    <div class="form-group">
+                        <input type="text" id="inputBuscar" placeholder="🔍 Buscar por nombre de cliente..." oninput="actualizarUI()">
+                    </div>
+                    
+                    <h3 style="color:var(--danger); margin-top:20px; font-size: 16px;">Préstamos con Atrasos</h3>
+                    <div id="contenedorAtrasos"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">Resumen General de Préstamos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha Préstamo</th>
+                                <th>Cliente</th>
+                                <th>Modalidad</th>
+                                <th>Monto Prestado</th>
+                                <th>Monto Pagado</th>
+                                <th>Progreso Cuotas</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaResumenPrestamos"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">Tarjetas Detalladas de Préstamos</h2>
+                <div id="contenedorPrestamosDirectos"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">Registro General de Cuotas</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Nº Cuota</th>
+                                <th>Monto</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCuotasGeneral"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PAGOS -->
+        <div id="tab-pagos" class="tab-content">
+            <h1 style="margin-bottom: 20px;">Registro y Gestión de Pagos Flexibles</h1>
+            
+            <div class="grid">
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Registrar Cobro / Abono de Cuotas</h2>
+                    <form id="formRegistroPago">
+                        <div class="form-group">
+                            <label>1. Seleccionar Cliente</label>
+                            <select id="pagoCliente" onchange="cargarPrestamosCliente()" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Seleccionar Préstamo Afectado</label>
+                            <select id="pagoPrestamo" onchange="cargarCuotasPendientes()" required disabled>
+                                <option value="">Seleccione primero un cliente...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>3. Seleccionar Cuota Objetivo (Atrasada o Actual)</label>
+                            <select id="pagoCuota" onchange="actualizarMontoSugerido()" required disabled>
+                                <option value="">Seleccione primero un préstamo...</option>
+                            </select>
+                        </div>
+
+                        <div id="boxCalculoPagoFlexible" class="simulador-box" style="display:none; background:#eff6ff; border-color:#93c5fd; margin-bottom:15px;">
+                            <p><span>Valor Cuota Base:</span> <strong id="lblValorCuotaSel">$0.00</strong></p>
+                            <p><span>Atraso / Deuda Pendiente Préstamo:</span> <strong id="lblDeudaTotalPrestamo" style="color:var(--danger);">$0.00</strong></p>
+                            <hr style="margin: 8px 0; border:0; border-top:1px dashed #cbd5e1;">
+                            <p id="lblImpactoPago" style="font-weight:bold; color:var(--primary); font-size:12px; display:block; text-align:left;">Ingrese un monto para ver el desglose.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Monto Pagado / Abonado ($)</label>
+                            <input type="number" id="pagoMontoEfectivo" step="0.01" placeholder="Ej. 2500.00" oninput="analizarImpactoPago()" required>
+                            <small style="color:#64748b; font-size:11px;">Puede ingresar un monto exacto, menor (parcial) o mayor (cubrirá cuotas o descontará de la siguiente).</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Pago Realizado</label>
+                            <input type="date" id="pagoFecha" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Forma de Pago</label>
+                            <select id="pagoForma" required>
+                                <option value="Efectivo" selected>Efectivo</option>
+                                <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
+                                <option value="Transferencia">Transferencia Bancaria</option>
+                                <option value="Materiales">Materiales / Bienes</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Lugar de Pago / Detalle</label>
+                            <input type="text" id="pagoLugar" required placeholder="Ej. Oficina central, Domicilio cliente...">
+                        </div>
+                        <button type="submit" class="btn-success">Confirmar y Registrar Pago Flexible</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Historial Reciente de Cobros</h2>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha Pago</th>
+                                    <th>Cliente</th>
+                                    <th>Préstamo</th>
+                                    <th>Monto Pagado</th>
+                                    <th>Interés Aplic.</th>
+                                    <th>Forma</th>
+                                    <th>Lugar / Detalle</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorialPagos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MI DEUDA -->
+        <div id="tab-mideuda" class="tab-content">
+            <h1 style="margin-bottom: 20px;">Mi Deuda</h1>
+            
+            <div class="card">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">Consulta Individual de Cliente</h2>
+                <div class="form-group">
+                    <label>Selecciona tu Usuario:</label>
+                    <select id="selectMiUsuario" onchange="renderMiDeuda()"></select>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="metric-card">
+                    <div>Cuota Activa:</div>
+                    <div class="metric-value" id="miCuotaSemanal">$0.00</div>
+                </div>
+                <div class="metric-card" style="border-left-color: var(--danger);">
+                    <div>Total de Deuda Restante:</div>
+                    <div class="metric-value" style="color: var(--danger);" id="miTotalDeuda">$0.00</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 18px; margin-bottom: 15px;">Préstamos Solicitados por Mí</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Préstamo</th>
+                                <th>Fecha Préstamo</th>
+                                <th>Modalidad</th>
+                                <th>Cuota</th>
+                                <th>Fecha Vencimiento Próxima</th>
+                                <th>Estado Cuota</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaMiDeuda"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- MODAL DETALLE DE CLIENTE / PLANILLA EXCEL -->
+<div id="modalDetalleCliente" class="modal">
+    <div class="modal-content modal-large">
+        <div class="flex-between" style="border-bottom: 2px solid #107c41; padding-bottom: 10px; margin-bottom: 15px;">
+            <h2 style="color: #107c41; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                📊 Planilla de Detalle de Cliente y Préstamo
+            </h2>
+            <button class="btn-danger btn-sm" onclick="cerrarModalDetalle()">❌ Cerrar</button>
+        </div>
+
+        <div id="contenidoDetalleCliente"></div>
+    </div>
+</div>
+
+<!-- MODAL MODIFICAR OPCIONES DE PAGO -->
+<div id="modalModificarPago" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 15px;">Modificar Opciones de Pago</h3>
+        <input type="hidden" id="modPrestamoId">
+        
+        <div class="form-group">
+            <label>Nuevo Valor de Cuota Fija ($)</label>
+            <input type="number" id="modNuevoMontoCuota" step="0.01">
+        </div>
+        
+        <div class="form-group">
+            <label>Siguiente Fecha de Vencimiento (Pendientes)</label>
+            <input type="date" id="modNuevaFechaVencimiento">
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-success" onclick="guardarOpcionesPago()">Guardar Cambios</button>
+            <button class="btn-warning" onclick="cerrarModalModificar()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RECARGO E INTERESES PAGO PARCIAL -->
+<div id="modalIntereses" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; color: var(--danger);">Saldo Pendiente Detectado</h3>
+        <p style="font-size: 14px; margin-bottom: 10px;">El pago ingresado deja un resto de: <strong id="txtSaldoTemp">$0.00</strong>.</p>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">¿Desea calcular y recargar los intereses correspondientes sobre el saldo restante de la cuota?</p>
+
+        <div style="display:flex; gap:10px; justify-content: center;">
+            <button class="btn-success" onclick="responderModalIntereses(true)">Sí, calcular e incluir</button>
+            <button class="btn-danger" onclick="responderModalIntereses(false)">No, mantener saldo base</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        addDoc, 
+        doc, 
+        updateDoc, 
+        deleteDoc,
+        onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC1q1OCAvnIVceMjXFKFJTWwTiMkO5y2f4",
+        authDomain: "willy-ee4aa.firebaseapp.com",
+        projectId: "willy-ee4aa",
+        storageBucket: "willy-ee4aa.firebasestorage.app",
+        messagingSenderId: "752147653801",
+        appId: "1:752147653801:web:971d450099bf35d95e35b8",
+        measurementId: "G-MSVVMLMPER"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const statusBadge = document.getElementById('conexionStatus');
+    
+    function actualizarEstadoRed() {
+        if (navigator.onLine) {
+            statusBadge.style.background = "#dcfce7";
+            statusBadge.style.color = "#15803d";
+            statusBadge.innerHTML = "🟢 Conectado a la Red";
+        } else {
+            statusBadge.style.background = "#fee2e2";
+            statusBadge.style.color = "#991b1b";
+            statusBadge.innerHTML = "🔴 Sin conexión (Modo offline)";
+        }
+    }
+
+    window.addEventListener('online', actualizarEstadoRed);
+    window.addEventListener('offline', actualizarEstadoRed);
+    actualizarEstadoRed();
+
+    let DB = {
+        clientes: [],
+        prestamos: [],
+        cuotas: []
+    };
+
+    let pagoPendienteTemp = null;
+
+    onSnapshot(collection(db, "clientes"), (snapshot) => {
+        DB.clientes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        actualizarUI();
+    });
+
+    onSnapshot(collection(db, "prestamos"), (snapshot) => {
+        DB.prestamos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        actualizarUI();
+    });
+
+    onSnapshot(collection(db, "cuotas"), (snapshot) => {
+        DB.cuotas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        actualizarUI();
+    });
+
+    window.switchTab = function(tabName, element) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        element.classList.add('active');
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+    };
+
+    const hoyStr = new Date().toISOString().split('T')[0];
+    document.getElementById('presFechaPrestamo').value = hoyStr;
+    document.getElementById('presFecha').value = hoyStr;
+    document.getElementById('pagoFecha').value = hoyStr;
+
+    window.calcularCuotaSimulada = function() {
+        const monto = parseFloat(document.getElementById('presMonto').value) || 0;
+        const tasa = (parseFloat(document.getElementById('presTasa').value) || 0) / 100;
+        const cuotas = parseInt(document.getElementById('presSemanas').value) || 1;
+
+        const interesTotal = monto * tasa * cuotas;
+        const totalADevolver = monto + interesTotal;
+        const valorCuota = totalADevolver / cuotas;
+
+        document.getElementById('simCuota').innerText = `$${valorCuota.toFixed(2)}`;
+        document.getElementById('simInteres').innerText = `$${interesTotal.toFixed(2)}`;
+        document.getElementById('simTotal').innerText = `$${totalADevolver.toFixed(2)}`;
+
+        return { valorCuota: valorCuota.toFixed(2), totalADevolver, interesTotal, tasaPorcentaje: parseFloat(document.getElementById('presTasa').value) || 0 };
+    };
+
+    document.getElementById('formCliente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('cliId').value;
+        const nombre = document.getElementById('cliNombre').value;
+        const telefono = document.getElementById('cliTelefono').value;
+        const domicilio = document.getElementById('cliDomicilio').value;
+        const info = document.getElementById('cliInfo').value;
+        const observaciones = document.getElementById('cliObservaciones').value;
+
+        const confirmacion = confirm(id ? "¿Está seguro de actualizar la información del cliente?" : "¿Está seguro de registrar este nuevo cliente?");
+        if (!confirmacion) return;
+
+        try {
+            if (id) {
+                const clienteRef = doc(db, "clientes", id);
+                await updateDoc(clienteRef, { nombre, telefono, domicilio, info, observaciones });
+            } else {
+                await addDoc(collection(db, "clientes"), { nombre, telefono, domicilio, info, observaciones });
+            }
+            cancelarEdicion();
+        } catch (error) {
+            console.error("Error al guardar cliente:", error);
+            alert("Ocurrió un error al guardar los datos.");
+        }
+    });
+
+    window.prepararEdicionCliente = function(id) {
+        const cliente = DB.clientes.find(c => c.id === id);
+        if (!cliente) return;
+
+        document.getElementById('cliId').value = cliente.id;
+        document.getElementById('cliNombre').value = cliente.nombre;
+        document.getElementById('cliTelefono').value = cliente.telefono;
+        document.getElementById('cliDomicilio').value = cliente.domicilio || '';
+        document.getElementById('cliInfo').value = cliente.info || '';
+        document.getElementById('cliObservaciones').value = cliente.observaciones || '';
+        
+        document.getElementById('tituloFormCliente').innerText = "Modificar Cliente";
+        document.getElementById('btnGuardarCliente').innerText = "Actualizar Datos";
+        document.getElementById('btnCancelarEdicion').style.display = "block";
+    };
+
+    window.cancelarEdicion = function() {
+        document.getElementById('cliId').value = '';
+        document.getElementById('formCliente').reset();
+        document.getElementById('tituloFormCliente').innerText = "Registrar / Editar Cliente";
+        document.getElementById('btnGuardarCliente').innerText = "Guardar Cliente";
+        document.getElementById('btnCancelarEdicion').style.display = "none";
+    };
+
+    document.getElementById('formPrestamo').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clienteId = document.getElementById('presCliente').value;
+        const fechaPrestamo = document.getElementById('presFechaPrestamo').value;
+        const modalidad = document.getElementById('presModalidad').value;
+        const monto = parseFloat(document.getElementById('presMonto').value);
+        const semanas = parseInt(document.getElementById('presSemanas').value);
+        const fechaInicio = new Date(document.getElementById('presFecha').value);
+
+        if (!clienteId) return alert('Seleccione un cliente');
+
+        const confirmacion = confirm(`¿Desea confirmar el nuevo préstamo de $${monto} para este cliente?`);
+        if (!confirmacion) return;
+
+        const calculo = calcularCuotaSimulada();
+
+        try {
+            const prestamoRef = await addDoc(collection(db, "prestamos"), {
+                clienteId,
+                fechaPrestamo,
+                modalidad,
+                montoTotal: monto,
+                tasaInteres: calculo.tasaPorcentaje,
+                cuotaValor: calculo.valorCuota,
+                totalCuotas: semanas
+            });
+
+            let diasIncremento = 7;
+            if (modalidad === 'quincenal') diasIncremento = 15;
+            if (modalidad === 'mensual') diasIncremento = 30;
+
+            let fechaBase = new Date(fechaInicio);
+
+            for (let i = 1; i <= semanas; i++) {
+                await addDoc(collection(db, "cuotas"), {
+                    prestamoId: prestamoRef.id,
+                    clienteId: clienteId,
+                    numeroCuota: i,
+                    montoCuota: calculo.valorCuota,
+                    fechaVencimiento: fechaBase.toISOString().split('T')[0],
+                    estado: 'pendiente'
+                });
+                fechaBase.setDate(fechaBase.getDate() + diasIncremento);
+            }
+
+            document.getElementById('formPrestamo').reset();
+            const hoyReset = new Date().toISOString().split('T')[0];
+            document.getElementById('presFechaPrestamo').value = hoyReset;
+            document.getElementById('presFecha').value = hoyReset;
+            calcularCuotaSimulada();
+            alert('Préstamo creado exitosamente.');
+        } catch (error) {
+            console.error("Error al guardar préstamo:", error);
+            alert("No se pudo registrar el préstamo.");
+        }
+    });
+
+    window.eliminarPrestamo = async function(prestamoId) {
+        const confirmacion = confirm("⚠️ ¿Está seguro de eliminar este préstamo? Se eliminarán también todas sus cuotas asociadas. Esta acción no se puede deshacer.");
+        if (!confirmacion) return;
+
+        try {
+            await deleteDoc(doc(db, "prestamos", prestamoId));
+
+            const cuotasAsociadas = DB.cuotas.filter(c => c.prestamoId === prestamoId);
+            for (let c of cuotasAsociadas) {
+                await deleteDoc(doc(db, "cuotas", c.id));
+            }
+
+            alert("Préstamo y sus cuotas asociadas eliminados correctamente.");
+        } catch (error) {
+            console.error("Error al eliminar préstamo:", error);
+            alert("Ocurrió un error al intentar eliminar el préstamo.");
+        }
+    };
+
+    document.getElementById('formRegistroPago').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cuotaId = document.getElementById('pagoCuota').value;
+        const montoIngresado = parseFloat(document.getElementById('pagoMontoEfectivo').value);
+        const fechaPago = document.getElementById('pagoFecha').value;
+        const formaPago = document.getElementById('pagoForma').value;
+        const lugarPago = document.getElementById('pagoLugar').value;
+
+        if (!cuotaId) return alert('Seleccione una cuota objetivo');
+        if (isNaN(montoIngresado) || montoIngresado <= 0) return alert('Ingrese un importe válido.');
+
+        const confirmacion = confirm(`¿Desea registrar el pago por un valor de $${montoIngresado.toFixed(2)}?`);
+        if (!confirmacion) return;
+
+        const cuota = DB.cuotas.find(c => c.id === cuotaId);
+        if (!cuota) return;
+
+        const cuotaMontoActual = parseFloat(cuota.montoCuota);
+
+        pagoPendienteTemp = {
+            cuotaId,
+            montoIngresado,
+            fechaPago,
+            formaPago,
+            lugarPago,
+            prestamoId: cuota.prestamoId,
+            cuotaTarget: cuota
+        };
+
+        if (montoIngresado < cuotaMontoActual) {
+            const saldoRestante = cuotaMontoActual - montoIngresado;
+            pagoPendienteTemp.saldoRestante = saldoRestante;
+            document.getElementById('txtSaldoTemp').innerText = `$${saldoRestante.toFixed(2)}`;
+            document.getElementById('modalIntereses').style.display = 'flex';
+        } else {
+            await procesarPagoAvanzado(0);
+        }
+    });
+
+    window.eliminarPagoRealizado = async function(cuotaId) {
+        const confirmacion = confirm("⚠️ ¿Está seguro de eliminar/anular este pago registrado? La cuota volverá a estar pendiente.");
+        if (!confirmacion) return;
+
+        try {
+            const cuotaRef = doc(db, "cuotas", cuotaId);
+            await updateDoc(cuotaRef, {
+                estado: 'pendiente',
+                montoPagadoTotal: 0,
+                interesesAplicados: 0,
+                fechaPago: null,
+                formaPago: null,
+                lugarPago: null
+            });
+            alert("El pago ha sido eliminado y la cuota ha vuelto al estado pendiente.");
+        } catch (error) {
+            console.error("Error al eliminar pago:", error);
+            alert("No se pudo eliminar el registro de pago.");
+        }
+    };
+
+    window.responderModalIntereses = async function(calcularInteres) {
+        document.getElementById('modalIntereses').style.display = 'none';
+        
+        let interesesCalculados = 0;
+
+        if (calcularInteres) {
+            const prestamo = DB.prestamos.find(p => p.id === pagoPendienteTemp.prestamoId);
+            const tasa = (prestamo && prestamo.tasaInteres) ? (prestamo.tasaInteres / 100) : 0.025;
+            interesesCalculados = pagoPendienteTemp.saldoRestante * tasa;
+        }
+
+        await procesarPagoAvanzado(interesesCalculados);
+    };
+
+    async function procesarPagoAvanzado(intereses) {
+        const { cuotaId, montoIngresado, fechaPago, formaPago, lugarPago, prestamoId, cuotaTarget } = pagoPendienteTemp;
+
+        const cuotasPendientes = DB.cuotas
+            .filter(c => c.prestamoId === prestamoId && c.estado !== 'pagado')
+            .sort((a, b) => a.numeroCuota - b.numeroCuota);
+
+        let saldoDisponible = montoIngresado;
+        
+        const startIndex = cuotasPendientes.findIndex(c => c.id === cuotaTarget.id);
+        const subCuotas = cuotasPendientes.slice(startIndex >= 0 ? startIndex : 0);
+
+        try {
+            for (let i = 0; i < subCuotas.length; i++) {
+                if (saldoDisponible <= 0) break;
+
+                const c = subCuotas[i];
+                let montoCuotaActual = parseFloat(c.montoCuota);
+                
+                if (i === 0 && intereses > 0) {
+                    montoCuotaActual += intereses;
+                }
+
+                const cuotaRef = doc(db, "cuotas", c.id);
+
+                if (saldoDisponible >= montoCuotaActual) {
+                    await updateDoc(cuotaRef, {
+                        estado: 'pagado',
+                        montoPagadoTotal: montoCuotaActual,
+                        interesesAplicados: i === 0 ? intereses : 0,
+                        fechaPago,
+                        formaPago,
+                        lugarPago
+                    });
+                    saldoDisponible -= montoCuotaActual;
+                } else {
+                    const nuevoValorCuota = montoCuotaActual - saldoDisponible;
+                    await updateDoc(cuotaRef, {
+                        estado: 'parcial',
+                        montoCuota: nuevoValorCuota.toFixed(2),
+                        montoPagadoTotal: (parseFloat(c.montoPagadoTotal) || 0) + saldoDisponible,
+                        interesesAplicados: i === 0 ? intereses : 0,
+                        fechaPago,
+                        formaPago,
+                        lugarPago
+                    });
+                    saldoDisponible = 0;
+                }
+            }
+
+            document.getElementById('formRegistroPago').reset();
+            document.getElementById('pagoFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('pagoPrestamo').disabled = true;
+            document.getElementById('pagoCuota').disabled = true;
+            document.getElementById('boxCalculoPagoFlexible').style.display = 'none';
+            pagoPendienteTemp = null;
+            alert('Pago procesado correctamente.');
+        } catch (error) {
+            console.error("Error al actualizar pago:", error);
+            alert("Error al guardar el pago.");
+        }
+    }
+
+    window.cargarPrestamosCliente = function() {
+        const clienteId = document.getElementById('pagoCliente').value;
+        const selectPrestamo = document.getElementById('pagoPrestamo');
+        const selectCuota = document.getElementById('pagoCuota');
+
+        selectPrestamo.innerHTML = '<option value="">Seleccione un préstamo...</option>';
+        selectCuota.innerHTML = '<option value="">Seleccione primero un préstamo...</option>';
+        selectCuota.disabled = true;
+        document.getElementById('boxCalculoPagoFlexible').style.display = 'none';
+
+        if (!clienteId) {
+            selectPrestamo.disabled = true;
+            return;
+        }
+
+        const prestamosCliente = DB.prestamos.filter(p => p.clienteId === clienteId);
+
+        if (prestamosCliente.length === 0) {
+            selectPrestamo.innerHTML = '<option value="">Cliente sin préstamos activos</option>';
+            selectPrestamo.disabled = true;
+            return;
+        }
+
+        prestamosCliente.forEach(p => {
+            const cuotasPendientes = DB.cuotas.filter(c => c.prestamoId === p.id && c.estado !== 'pagado').length;
+            selectPrestamo.innerHTML += `
+                <option value="${p.id}">
+                    Préstamo #${p.id.slice(-4)} (${p.modalidad}) - $${p.montoTotal} [${cuotasPendientes} cuotas pend.]
+                </option>`;
+        });
+
+        selectPrestamo.disabled = false;
+    };
+
+    window.cargarCuotasPendientes = function() {
+        const prestamoId = document.getElementById('pagoPrestamo').value;
+        const selectCuota = document.getElementById('pagoCuota');
+        selectCuota.innerHTML = '<option value="">Seleccione cuota...</option>';
+        document.getElementById('boxCalculoPagoFlexible').style.display = 'none';
+
+        if (!prestamoId) {
+            selectCuota.disabled = true;
+            return;
+        }
+
+        const cuotasPendientes = DB.cuotas
+            .filter(c => c.prestamoId === prestamoId && c.estado !== 'pagado')
+            .sort((a,b) => a.numeroCuota - b.numeroCuota);
+
+        if (cuotasPendientes.length === 0) {
+            selectCuota.innerHTML = '<option value="">Préstamo 100% pagado</option>';
+            selectCuota.disabled = true;
+            return;
+        }
+
+        const hoy = new Date().toISOString().split('T')[0];
+
+        cuotasPendientes.forEach(c => {
+            const esAtrasada = c.fechaVencimiento < hoy || c.estado === 'atrasado';
+            const estadoTexto = esAtrasada ? 'ATRASADA' : (c.estado === 'parcial' ? 'PARCIAL' : 'PENDIENTE');
+            selectCuota.innerHTML += `<option value="${c.id}">Cuota #${c.numeroCuota} - $${c.montoCuota} [${estadoTexto}] (Vence: ${c.fechaVencimiento})</option>`;
+        });
+
+        selectCuota.disabled = false;
+    };
+
+    window.actualizarMontoSugerido = function() {
+        const cuotaId = document.getElementById('pagoCuota').value;
+        const cuota = DB.cuotas.find(c => c.id === cuotaId);
+        
+        if (cuota) {
+            document.getElementById('pagoMontoEfectivo').value = cuota.montoCuota;
+            document.getElementById('boxCalculoPagoFlexible').style.display = 'block';
+            
+            const prestamoId = cuota.prestamoId;
+            const cuotasPrestamo = DB.cuotas.filter(c => c.prestamoId === prestamoId && c.estado !== 'pagado');
+            const totalDeudaPr = cuotasPrestamo.reduce((sum, c) => sum + parseFloat(c.montoCuota), 0);
+
+            document.getElementById('lblValorCuotaSel').innerText = `$${parseFloat(cuota.montoCuota).toFixed(2)}`;
+            document.getElementById('lblDeudaTotalPrestamo').innerText = `$${totalDeudaPr.toFixed(2)}`;
+
+            analizarImpactoPago();
+        } else {
+            document.getElementById('boxCalculoPagoFlexible').style.display = 'none';
+        }
+    };
+
+    window.analizarImpactoPago = function() {
+        const cuotaId = document.getElementById('pagoCuota').value;
+        const montoIngresado = parseFloat(document.getElementById('pagoMontoEfectivo').value) || 0;
+        const cuota = DB.cuotas.find(c => c.id === cuotaId);
+
+        if (!cuota || montoIngresado <= 0) {
+            document.getElementById('lblImpactoPago').innerText = "Ingrese un valor para analizar el cálculo de las cuotas.";
+            return;
+        }
+
+        const valCuota = parseFloat(cuota.montoCuota);
+        const lblImpacto = document.getElementById('lblImpactoPago');
+
+        if (Math.abs(montoIngresado - valCuota) < 0.01) {
+            lblImpacto.innerHTML = "💡 <strong>Pago Exacto:</strong> Se cubrirá totalmente la cuota seleccionada.";
+        } else if (montoIngresado < valCuota) {
+            const diferencia = valCuota - montoIngresado;
+            lblImpacto.innerHTML = `💡 <strong>Pago Parcial:</strong> Quedará un saldo restante de <strong>$${diferencia.toFixed(2)}</strong> en esta cuota.`;
+        } else {
+            const excedente = montoIngresado - valCuota;
+            
+            const cuotasPendientes = DB.cuotas
+                .filter(c => c.prestamoId === cuota.prestamoId && c.estado !== 'pagado')
+                .sort((a,b) => a.numeroCuota - b.numeroCuota);
+
+            const indexTarget = cuotasPendientes.findIndex(c => c.id === cuota.id);
+            const siguientesCuotas = cuotasPendientes.slice(indexTarget + 1);
+
+            let saldoRest = excedente;
+            let cuotasCompletasSiguientes = 0;
+
+            for (let sig of siguientesCuotas) {
+                let mSig = parseFloat(sig.montoCuota);
+                if (saldoRest >= mSig) {
+                    saldoRest -= mSig;
+                    cuotasCompletasSiguientes++;
+                } else {
+                    break;
+                }
+            }
+
+            let msg = `💡 <strong>Pago Mayor / Adelantado:</strong> Cubre la cuota #${cuota.numeroCuota}`;
+            if (cuotasCompletasSiguientes > 0) {
+                msg += ` + ${cuotasCompletasSiguientes} cuota(s) siguiente(s) completa(s)`;
+            }
+            if (saldoRest > 0) {
+                msg += ` y se descontarán <strong>$${saldoRest.toFixed(2)}</strong> de la cuota subsecuente.`;
+            } else {
+                msg += `.`;
+            }
+
+            lblImpacto.innerHTML = msg;
+        }
+    };
+
+    window.prepararPagoDirecto = function(cuotaId, clienteId) {
+        const cuota = DB.cuotas.find(c => c.id === cuotaId);
+        if (!cuota) return;
+
+        switchTab('pagos', document.querySelectorAll('.tab-btn')[2]);
+        document.getElementById('pagoCliente').value = clienteId;
+        cargarPrestamosCliente();
+        
+        document.getElementById('pagoPrestamo').value = cuota.prestamoId;
+        cargarCuotasPendientes();
+        
+        document.getElementById('pagoCuota').value = cuotaId;
+        actualizarMontoSugerido();
+    };
+
+    window.abrirModalModificar = function(prestamoId) {
+        const prestamo = DB.prestamos.find(p => p.id === prestamoId);
+        if(!prestamo) return;
+
+        document.getElementById('modPrestamoId').value = prestamoId;
+        document.getElementById('modNuevoMontoCuota').value = prestamo.cuotaValor;
+
+        const cuotasPendientes = DB.cuotas.filter(c => c.prestamoId === prestamoId && c.estado !== 'pagado');
+        if(cuotasPendientes.length > 0) {
+            document.getElementById('modNuevaFechaVencimiento').value = cuotasPendientes[0].fechaVencimiento;
+        }
+
+        document.getElementById('modalModificarPago').style.display = 'flex';
+    };
+
+    window.cerrarModalModificar = function() {
+        document.getElementById('modalModificarPago').style.display = 'none';
+    };
+
+    // FUNCIONES DEL MODAL DETALLE CLIENTE (EXCEL)
+    window.verDetalleCliente = function(clienteId) {
+        const cliente = DB.clientes.find(c => c.id === clienteId);
+        if (!cliente) return;
+
+        const misPrestamos = DB.prestamos.filter(p => p.clienteId === clienteId);
+        const contenedor = document.getElementById('contenidoDetalleCliente');
+
+        let html = `
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <h3 style="margin-bottom: 8px; color: var(--primary);">👤 Información del Cliente</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 13px;">
+                    <div><strong>Nombre:</strong> ${cliente.nombre}</div>
+                    <div><strong>Teléfono:</strong> ${cliente.telefono}</div>
+                    <div><strong>Domicilio:</strong> ${cliente.domicilio || 'N/A'}</div>
+                    <div><strong>Email / Doc:</strong> ${cliente.info || 'N/A'}</div>
+                </div>
+                ${cliente.observaciones ? `<div style="margin-top: 8px; font-size: 12px; color: #64748b;"><strong>Obs:</strong> ${cliente.observaciones}</div>` : ''}
+            </div>
+        `;
+
+        if (misPrestamos.length === 0) {
+            html += `<p style="text-align: center; color: #64748b; padding: 20px;">Este cliente no posee préstamos registrados.</p>`;
+        } else {
+            misPrestamos.forEach((p, index) => {
+                const cuotasPrestamo = DB.cuotas.filter(c => c.prestamoId === p.id).sort((a,b) => a.numeroCuota - b.numeroCuota);
+                
+                const totalDevolver = cuotasPrestamo.reduce((sum, c) => sum + parseFloat(c.montoCuota || 0), 0);
+                const totalPagado = cuotasPrestamo.reduce((sum, c) => {
+                    if (c.estado === 'pagado') return sum + parseFloat(c.montoPagadoTotal || c.montoCuota);
+                    if (c.estado === 'parcial') return sum + parseFloat(c.montoPagadoTotal || 0);
+                    return sum;
+                }, 0);
+                const saldoRestante = totalDevolver - totalPagado;
+
+                html += `
+                    <div style="margin-bottom: 25px;">
+                        <div class="flex-between" style="background: #e2e8f0; padding: 8px 12px; border-radius: 6px 6px 0 0; font-weight: bold; font-size: 14px;">
+                            <span>💰 Préstamo #${index + 1} (${p.modalidad.toUpperCase()}) - ID: ${p.id.slice(-4)}</span>
+                            <span>Fecha: ${p.fechaPrestamo || '—'}</span>
+                        </div>
+                        
+                        <div style="background: #f1f5f9; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 12px; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1;">
+                            <div>Capital: <strong>$${parseFloat(p.montoTotal).toFixed(2)}</strong></div>
+                            <div>Valor Cuota: <strong>$${parseFloat(p.cuotaValor).toFixed(2)}</strong></div>
+                            <div>Total Pagado: <strong style="color:var(--success);">$${totalPagado.toFixed(2)}</strong></div>
+                            <div>Saldo Pendiente: <strong style="color:var(--danger);">$${saldoRestante.toFixed(2)}</strong></div>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="excel-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nº Cuota</th>
+                                        <th>Vencimiento</th>
+                                        <th>Monto Cuota</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Pago</th>
+                                        <th>Monto Pagado</th>
+                                        <th>Interés Aplic.</th>
+                                        <th>Forma Pago</th>
+                                        <th>Lugar / Detalle</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                cuotasPrestamo.forEach(c => {
+                    const hoy = new Date().toISOString().split('T')[0];
+                    const esAtrasado = (c.estado === 'pendiente' && c.fechaVencimiento < hoy);
+                    const estadoTexto = esAtrasado ? 'ATRASADO' : c.estado.toUpperCase();
+                    
+                    let bgEstado = '#ffffff';
+                    if (c.estado === 'pagado') bgEstado = '#dcfce7';
+                    if (c.estado === 'parcial') bgEstado = '#e0f2fe';
+                    if (esAtrasado || c.estado === 'atrasado') bgEstado = '#fee2e2';
+
+                    html += `
+                        <tr>
+                            <td style="text-align: center; font-weight: bold;">${c.numeroCuota}</td>
+                            <td style="text-align: center;">${c.fechaVencimiento}</td>
+                            <td style="text-align: right; font-weight: bold;">$${parseFloat(c.montoCuota).toFixed(2)}</td>
+                            <td style="text-align: center; background-color: ${bgEstado}; font-weight: bold; font-size: 11px;">${estadoTexto}</td>
+                            <td style="text-align: center;">${c.fechaPago || '—'}</td>
+                            <td style="text-align: right; color: var(--success); font-weight: bold;">${c.montoPagadoTotal ? `$${parseFloat(c.montoPagadoTotal).toFixed(2)}` : '—'}</td>
+                            <td style="text-align: right; color: var(--danger);">${c.interesesAplicados ? `$${parseFloat(c.interesesAplicados).toFixed(2)}` : '$0.00'}</td>
+                            <td style="text-align: center;">${c.formaPago || '—'}</td>
+                            <td>${c.lugarPago || '—'}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        contenedor.innerHTML = html;
+        document.getElementById('modalDetalleCliente').style.display = 'flex';
+    };
+
+    window.cerrarModalDetalle = function() {
+        document.getElementById('modalDetalleCliente').style.display = 'none';
+    };
+
+    window.guardarOpcionesPago = async function() {
+        const prestamoId = document.getElementById('modPrestamoId').value;
+        const nuevoMonto = parseFloat(document.getElementById('modNuevoMontoCuota').value);
+        const nuevaFecha = document.getElementById('modNuevaFechaVencimiento').value;
+
+        if(!nuevoMonto || nuevoMonto <= 0) return alert('Ingrese un monto válido');
+
+        try {
+            const prestamoRef = doc(db, "prestamos", prestamoId);
+            await updateDoc(prestamoRef, { cuotaValor: nuevoMonto.toFixed(2) });
+
+            const cuotasPendientes = DB.cuotas.filter(c => c.prestamoId === prestamoId && c.estado !== 'pagado');
+            let fechaBase = new Date(nuevaFecha);
+            const prestamo = DB.prestamos.find(p => p.id === prestamoId);
+            
+            let diasIncremento = 7;
+            if (prestamo && prestamo.modalidad === 'quincenal') diasIncremento = 15;
+            if (prestamo && prestamo.modalidad === 'mensual') diasIncremento = 30;
+
+            for (let i = 0; i < cuotasPendientes.length; i++) {
+                const c = cuotasPendientes[i];
+                const cuotaRef = doc(db, "cuotas", c.id);
+                await updateDoc(cuotaRef, {
+                    montoCuota: nuevoMonto.toFixed(2),
+                    fechaVencimiento: fechaBase.toISOString().split('T')[0]
+                });
+                fechaBase.setDate(fechaBase.getDate() + diasIncremento);
+            }
+
+            cerrarModalModificar();
+        } catch (error) {
+            console.error("Error al guardar cambios:", error);
+            alert("No se pudieron guardar las modificaciones.");
+        }
+    };
+
+    window.actualizarUI = function() {
+        const hoy = new Date().toISOString().split('T')[0];
+
+        const selectCliente = document.getElementById('presCliente');
+        const selectPagoCliente = document.getElementById('pagoCliente');
+        const selectMiUsuario = document.getElementById('selectMiUsuario');
+        
+        const miUsuarioPrevio = selectMiUsuario.value;
+        const pagoClientePrevio = selectPagoCliente.value;
+
+        selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+        selectPagoCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+        selectMiUsuario.innerHTML = '<option value="">Seleccione su usuario...</option>';
+
+        DB.clientes.forEach(c => {
+            selectCliente.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+            selectPagoCliente.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+            selectMiUsuario.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+        });
+
+        if (miUsuarioPrevio) selectMiUsuario.value = miUsuarioPrevio;
+        if (pagoClientePrevio) {
+            selectPagoCliente.value = pagoClientePrevio;
+        }
+
+        // TABLA CLIENTES
+        const tablaClientes = document.getElementById('tablaClientes');
+        tablaClientes.innerHTML = '';
+
+        DB.clientes.forEach(c => {
+            const misPrestamos = DB.prestamos.filter(p => p.clienteId === c.id);
+            const cuotasCliente = DB.cuotas.filter(cuota => cuota.clienteId === c.id);
+
+            const montoPrestamoTotal = misPrestamos.reduce((sum, p) => sum + parseFloat(p.montoTotal || 0), 0);
+
+            const montoDebido = cuotasCliente
+                .filter(cuota => cuota.estado !== 'pagado')
+                .reduce((sum, cuota) => sum + parseFloat(cuota.montoCuota), 0);
+
+            const cuotasAtrasadas = cuotasCliente.filter(cuota => 
+                cuota.estado === 'atrasado' || (cuota.estado === 'pendiente' && cuota.fechaVencimiento < hoy)
+            ).length;
+
+            let estadoPrestamoBadge = '';
+            if (misPrestamos.length === 0) {
+                estadoPrestamoBadge = '<span class="badge badge-sinprestamo">Sin Préstamo</span>';
+            } else if (montoDebido === 0) {
+                estadoPrestamoBadge = '<span class="badge badge-pagado">Completado</span>';
+            } else if (cuotasAtrasadas > 0) {
+                estadoPrestamoBadge = `<span class="badge badge-atrasado">En Atraso (${cuotasAtrasadas})</span>`;
+            } else {
+                estadoPrestamoBadge = '<span class="badge badge-pendiente">Al Día</span>';
+            }
+
+            const proximaCuota = cuotasCliente
+                .filter(cuota => cuota.estado !== 'pagado')
+                .sort((a, b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento))[0];
+
+            const montoCuotaTexto = proximaCuota ? `$${parseFloat(proximaCuota.montoCuota).toFixed(2)}` : '—';
+            const fechaProximaCuota = proximaCuota ? proximaCuota.fechaVencimiento : '—';
+
+            tablaClientes.innerHTML += `
+                <tr>
+                    <td><strong>${c.nombre}</strong><br><small>Tel: ${c.telefono}</small></td>
+                    <td><strong>$${montoPrestamoTotal.toFixed(2)}</strong></td>
+                    <td>${estadoPrestamoBadge}</td>
+                    <td>${montoCuotaTexto}</td>
+                    <td style="color:${cuotasAtrasadas > 0 ? 'var(--danger)' : 'var(--text)'}; font-weight:${cuotasAtrasadas > 0 ? 'bold' : 'normal'};">
+                        ${cuotasAtrasadas}
+                    </td>
+                    <td>${fechaProximaCuota}</td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-sm btn-info" onclick="verDetalleCliente('${c.id}')">👁️ Detalle</button>
+                            <button class="btn-sm btn-warning" onclick="prepararEdicionCliente('${c.id}')">✏️ Editar</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        const totalPrestado = DB.prestamos.reduce((sum, p) => sum + parseFloat(p.montoTotal), 0);
+        document.getElementById('metricTotalPrestado').innerText = `$${totalPrestado.toFixed(2)}`;
+
+        // TABLA RESUMEN DE PRÉSTAMOS
+        const tablaResumenPrestamos = document.getElementById('tablaResumenPrestamos');
+        tablaResumenPrestamos.innerHTML = '';
+
+        if(DB.prestamos.length === 0) {
+            tablaResumenPrestamos.innerHTML = '<tr><td colspan="7" style="color:#64748b;">No hay préstamos activos registrados.</td></tr>';
+        } else {
+            DB.prestamos.slice().reverse().forEach(p => {
+                const cliente = DB.clientes.find(cli => cli.id === p.clienteId);
+                const cuotasPrestamo = DB.cuotas.filter(c => c.prestamoId === p.id);
+                const pagadas = cuotasPrestamo.filter(c => c.estado === 'pagado').length;
+
+                const montoPagado = cuotasPrestamo.reduce((sum, c) => {
+                    if (c.estado === 'pagado') return sum + parseFloat(c.montoPagadoTotal || c.montoCuota);
+                    if (c.estado === 'parcial') return sum + parseFloat(c.montoPagadoTotal || 0);
+                    return sum;
+                }, 0);
+
+                tablaResumenPrestamos.innerHTML += `
+                    <tr>
+                        <td><strong>${p.fechaPrestamo || '—'}</strong></td>
+                        <td>${cliente ? cliente.nombre : 'Cliente Eliminado'}</td>
+                        <td style="text-transform: capitalize;">${p.modalidad || 'semanal'}</td>
+                        <td><strong>$${parseFloat(p.montoTotal).toFixed(2)}</strong></td>
+                        <td style="color:var(--success); font-weight:bold;">$${montoPagado.toFixed(2)}</td>
+                        <td>${pagadas} / ${cuotasPrestamo.length} cuotas</td>
+                        <td>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-sm btn-warning" onclick="abrirModalModificar('${p.id}')">⚙️ Opciones</button>
+                                <button class="btn-sm btn-danger" onclick="eliminarPrestamo('${p.id}')">🗑️ Eliminar</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // TARJETAS DETALLADAS DE PRÉSTAMOS
+        const contenedorPrestamosDirectos = document.getElementById('contenedorPrestamosDirectos');
+        contenedorPrestamosDirectos.innerHTML = '';
+
+        if(DB.prestamos.length === 0) {
+            contenedorPrestamosDirectos.innerHTML = '<p style="color:#64748b;">No hay préstamos activos registrados.</p>';
+        } else {
+            DB.prestamos.slice().reverse().forEach(p => {
+                const cliente = DB.clientes.find(cli => cli.id === p.clienteId);
+                const cuotasPrestamo = DB.cuotas.filter(c => c.prestamoId === p.id);
+                const pagadas = cuotasPrestamo.filter(c => c.estado === 'pagado').length;
+
+                const montoPagado = cuotasPrestamo.reduce((sum, c) => {
+                    if (c.estado === 'pagado') return sum + parseFloat(c.montoPagadoTotal || c.montoCuota);
+                    if (c.estado === 'parcial') return sum + parseFloat(c.montoPagadoTotal || 0);
+                    return sum;
+                }, 0);
+
+                contenedorPrestamosDirectos.innerHTML += `
+                    <div class="prestamo-card">
+                        <div class="prestamo-card-header">
+                            <div>
+                                <strong>👤 ${cliente ? cliente.nombre : 'Cliente Eliminado'}</strong> 
+                                <small>(${p.modalidad || 'semanal'})</small>
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-sm btn-warning" onclick="abrirModalModificar('${p.id}')">⚙️ Modificar Opciones Pago</button>
+                                <button class="btn-sm btn-danger" onclick="eliminarPrestamo('${p.id}')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                        <div style="font-size:13px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+                            <span>Fecha Préstamo: <strong>${p.fechaPrestamo || '—'}</strong></span>
+                            <span>Monto Prestado: <strong>$${p.montoTotal}</strong></span>
+                            <span>Monto Pagado: <strong style="color:var(--success);">$${montoPagado.toFixed(2)}</strong></span>
+                            <span>Valor Cuota: <strong>$${p.cuotaValor}</strong></span>
+                            <span>Avance: <strong>${pagadas} / ${cuotasPrestamo.length} Cuotas</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        const terminoBusqueda = document.getElementById('inputBuscar').value.toLowerCase();
+        const contenedorAtrasos = document.getElementById('contenedorAtrasos');
+        contenedorAtrasos.innerHTML = '';
+
+        const cuotasAtrasadas = DB.cuotas.filter(c => c.estado === 'atrasado' || (c.estado === 'pendiente' && c.fechaVencimiento < hoy));
+
+        if (cuotasAtrasadas.length === 0) {
+            contenedorAtrasos.innerHTML = '<p style="font-size:13px;">No hay cuotas vencidas pendientes.</p>';
+        } else {
+            cuotasAtrasadas.forEach(c => {
+                const cliente = DB.clientes.find(cli => cli.id === c.clienteId);
+                if (!cliente || !cliente.nombre.toLowerCase().includes(terminoBusqueda)) return;
+
+                contenedorAtrasos.innerHTML += `
+                    <div class="flex-between" style="border-bottom: 1px solid var(--border); padding: 8px 0;">
+                        <div>
+                            <strong>${cliente.nombre}</strong> - Cuota #${c.numeroCuota}<br>
+                            <small style="color:var(--danger)">Venció el: ${c.fechaVencimiento}</small>
+                        </div>
+                        <div>
+                            <strong>$${c.montoCuota}</strong>
+                            <button class="btn-sm btn-success" onclick="prepararPagoDirecto('${c.id}', '${c.clienteId}')">Registrar Pago</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        const tablaCuotasGeneral = document.getElementById('tablaCuotasGeneral');
+        tablaCuotasGeneral.innerHTML = '';
+
+        DB.cuotas.slice().reverse().forEach(c => {
+            const cliente = DB.clientes.find(cli => cli.id === c.clienteId);
+            if (cliente && !cliente.nombre.toLowerCase().includes(terminoBusqueda)) return;
+
+            const estadoEfectivo = (c.estado === 'pendiente' && c.fechaVencimiento < hoy) ? 'atrasado' : c.estado;
+
+            tablaCuotasGeneral.innerHTML += `
+                <tr>
+                    <td>${cliente ? cliente.nombre : 'Eliminado'}</td>
+                    <td>#${c.numeroCuota}</td>
+                    <td>$${c.montoCuota}</td>
+                    <td>${c.fechaVencimiento}</td>
+                    <td><span class="badge badge-${estadoEfectivo}">${estadoEfectivo}</span></td>
+                    <td>
+                        ${c.estado !== 'pagado' 
+                            ? `<button class="btn-sm btn-success" onclick="prepararPagoDirecto('${c.id}', '${c.clienteId}')">Cobrar</button>` 
+                            : '—'}
+                    </td>
+                </tr>
+            `;
+        });
+
+        const tablaHistorialPagos = document.getElementById('tablaHistorialPagos');
+        tablaHistorialPagos.innerHTML = '';
+
+        const cuotasConPagos = DB.cuotas.filter(c => c.estado === 'pagado' || c.estado === 'parcial');
+        if (cuotasConPagos.length === 0) {
+            tablaHistorialPagos.innerHTML = '<tr><td colspan="8">No se han registrado cobros todavía.</td></tr>';
+        } else {
+            cuotasConPagos.slice().reverse().forEach(c => {
+                const cliente = DB.clientes.find(cli => cli.id === c.clienteId);
+                
+                tablaHistorialPagos.innerHTML += `
+                    <tr>
+                        <td>${c.fechaPago || 'Sin fecha'}</td>
+                        <td><strong>${cliente ? cliente.nombre : 'Desconocido'}</strong></td>
+                        <td><small>Préstamo #${c.prestamoId ? c.prestamoId.slice(-4) : 'N/A'}</small></td>
+                        <td style="color:var(--success); font-weight:bold;">$${(c.montoPagadoTotal || c.montoCuota)}</td>
+                        <td style="color:var(--danger); font-weight:bold;">$${(c.interesesAplicados || 0).toFixed(2)}</td>
+                        <td>${c.formaPago || 'Efectivo'}</td>
+                        <td>${c.lugarPago || 'No especificado'}</td>
+                        <td>
+                            <button class="btn-sm btn-danger" onclick="eliminarPagoRealizado('${c.id}')">🗑️ Eliminar Pago</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        renderMiDeuda();
+    };
+
+    window.renderMiDeuda = function() {
+        const clienteId = document.getElementById('selectMiUsuario').value;
+        const tablaMiDeuda = document.getElementById('tablaMiDeuda');
+        const hoy = new Date().toISOString().split('T')[0];
+        tablaMiDeuda.innerHTML = '';
+
+        if (!clienteId) {
+            document.getElementById('miCuotaSemanal').innerText = '$0.00';
+            document.getElementById('miTotalDeuda').innerText = '$0.00';
+            return;
+        }
+
+        const misCuotas = DB.cuotas.filter(c => c.clienteId === clienteId);
+        const cuotasPendientes = misCuotas.filter(c => c.estado !== 'pagado');
+
+        const totalDeuda = cuotasPendientes.reduce((sum, c) => sum + parseFloat(c.montoCuota), 0);
+        const proximaCuota = cuotasPendientes[0];
+
+        document.getElementById('miCuotaSemanal').innerText = proximaCuota ? `$${proximaCuota.montoCuota}` : '$0.00';
+        document.getElementById('miTotalDeuda').innerText = `$${totalDeuda.toFixed(2)}`;
+
+        const misPrestamos = DB.prestamos.filter(p => p.clienteId === clienteId);
+
+        misPrestamos.forEach(p => {
+            const cuotasDelPrestamo = misCuotas.filter(c => c.prestamoId === p.id && c.estado !== 'pagado');
+            const sigCuota = cuotasDelPrestamo[0];
+
+            let estadoSigCuota = sigCuota ? sigCuota.estado : 'Al día';
+            if (sigCuota && sigCuota.estado === 'pendiente' && sigCuota.fechaVencimiento < hoy) {
+                estadoSigCuota = 'atrasado';
+            }
+
+            tablaMiDeuda.innerHTML += `
+                <tr>
+                    <td>#${p.id.slice(-4)}</td>
+                    <td>${p.fechaPrestamo || '—'}</td>
+                    <td style="text-transform: capitalize;">${p.modalidad || 'Semanal'}</td>
+                    <td>$${p.cuotaValor}</td>
+                    <td>${sigCuota ? sigCuota.fechaVencimiento : 'Finalizado'}</td>
+                    <td>${sigCuota ? `<span class="badge badge-${estadoSigCuota}">${estadoSigCuota}</span>` : 'Al día'}</td>
+                </tr>
+            `;
+        });
+    };
+
+    calcularCuotaSimulada();
+</script>
+
+</body>
+</html>
